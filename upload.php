@@ -1,24 +1,10 @@
 <?php
-
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-require_once 'SimpleXLS.php';
-
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "seid_ac_matrix-part";
-
-$conn = new mysqli($host, $user, $pass, $db);
-
-if ($conn->connect_error) {
-    die("Koneksi gagal : " . $conn->connect_error);
-}
+require 'conn.php';
+require 'library/SimpleXLS.php';
+use Shuchkin\SimpleXLS;
 
 // PASSWORD UPLOAD
-$uploadPassword = "SafeUpload01";
-
+$uploadPassword = "Admin123";
 $message = "";
 
 // =========================
@@ -60,7 +46,7 @@ if(isset($_POST['upload'])){
             $file = $_FILES['excel_file']['tmp_name'];
 
             // PARSE XLS
-            if ($xls = Shuchkin\SimpleXLS::parse($file)) {
+            if ($xls = SimpleXLS::parse($file)) {
 
                 $rows = $xls->rows();
 
@@ -149,111 +135,35 @@ if(isset($_POST['upload'])){
 
             } else {
 
-                $message = Shuchkin\SimpleXLS::parseError();
+                $message = SimpleXLS::parseError();
             }
         }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
-
-    <title>Upload XLS Matrix Part</title>
-
-    <style>
-
-        body{
-            font-family:Arial;
-            background:#f5f5f5;
-            padding:40px;
-        }
-
-        .box{
-            width:500px;
-            background:white;
-            padding:25px;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,0.1);
-        }
-
-        h2{
-            margin-top:0;
-        }
-
-        input[type=file],
-        input[type=password]{
-            width:100%;
-            padding:10px;
-            margin-top:10px;
-            margin-bottom:20px;
-            box-sizing:border-box;
-        }
-
-        button{
-            padding:10px 20px;
-            background:#007bff;
-            color:white;
-            border:none;
-            border-radius:5px;
-            cursor:pointer;
-        }
-
-        button:hover{
-            background:#0056b3;
-        }
-
-        .msg{
-            margin-top:20px;
-            font-weight:bold;
-            color:red;
-        }
-
-        .success{
-            color:green;
-        }
-
-    </style>
-
+    <title>Matrix Part</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-
-<div class="box">
-
-    <h2>Upload XLS Matrix Part</h2>
-
-    <form method="POST" enctype="multipart/form-data">
-
-        <label>Choose XLS File</label>
-
-        <input
-            type="file"
-            name="excel_file"
-            accept=".xls"
-            required
-        >
-
-        <label>Password Upload</label>
-
-        <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-        >
-
-        <button type="submit" name="upload">
-            Upload
-        </button>
-
+<body> 
+<div class="container text-center">
+    <h1 class="h1 m-5">Upload XLS Matrix Part</h1>
+    <form method="POST" enctype="multipart/form-data" style="max-width: 500px;" class="mx-auto">
+        <div class="mb-3">
+            <input class="form-control" type="file" name="excel_file" accept=".xls" required>
+        </div>
+        <input type="password" class="form-control" name="password" placeholder="Password" required>
+        <button type="submit" name="upload" class="btn btn-primary my-3 w-100">Uploads</button>
     </form>
-
-    <div class="msg <?php echo ($message == 'Upload berhasil!') ? 'success' : ''; ?>">
-        <?php echo $message; ?>
-    </div>
-
+    <?php if (!empty($message)) : ?>
+        <div class="alert <?php echo ($message == 'Upload berhasil!') ? 'alert-success' : 'alert-danger'; ?> mx-auto" role="alert" style="max-width: 500px;">
+            <?php echo $message; ?>
+        </div>
+    <?php endif; ?>
 </div>
-
+<!-- Javascript -->
+<script src="../../js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

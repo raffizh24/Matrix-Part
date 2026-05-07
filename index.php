@@ -1,83 +1,192 @@
 <?php
 require 'conn.php';
-session_start();
 
-// Cek login via QR lebih dulu, sebelum HTML dikirim
-if (isset($_GET['uid']) && isset($_GET['pwd'])) {
-  $username = $_GET['uid'];
-  $password = $_GET['pwd'];
-  loginUser($username, $password, $conn);
+// =========================
+// AMBIL SEMUA KOLOM
+// =========================
+$columns = [];
+$getColumns = $conn->query("SHOW COLUMNS FROM matrix_part");
+while($col = $getColumns->fetch_assoc()){
+    if($col['Field'] != 'id'){
+        $columns[] = $col['Field'];
+    }
 }
 
-// Cek sesi, redirect kalau udah login
-if (isset($_SESSION['role'])) {
-  redirectToDashboard($_SESSION['role']);
-}
+// =========================
+// SEARCH
+// =========================
+$data = [];
+$keyword = "";
+$type = "";
+if(isset($_GET['search'])){
 
-// Fungsi login
-function loginUser($username, $password, $conn)
-{
-  $query = "SELECT * FROM user WHERE username = '$username'";
-  $result = mysqli_query($conn, $query);
-  $data = mysqli_fetch_assoc($result);
+    $keyword = trim($_GET['keyword']);
+    $type = $_GET['type'];
 
-  if ($data && $password == $data['password']) {
-    $_SESSION['role'] = $data['role'];
-    $_SESSION['username'] = $data['username'];
-    $_SESSION['nama'] = $data['nama'];
-    redirectToDashboard();
-  } else {
-    echo "<script>alert('Login gagal! Username atau password salah.')</script>";
-  }
-}
+    if($type == 'component'){
 
-// Fungsi redirect ke dashboard
-function redirectToDashboard()
-{
-  header("Location: dashboard.php");
-  exit;
-}
+        $sql = "SELECT * FROM matrix_part
+        WHERE Component LIKE '%$keyword%'";
+    }
+    else if($type == 'description'){
 
-// Login via form
-if (isset($_POST['btn_login'])) {
-  $username = $_POST['username'];
-  $password = $_POST['password'];
-  loginUser($username, $password, $conn);
+        $sql = "SELECT * FROM matrix_part
+        WHERE Description LIKE '%$keyword%'";
+    }
+    else if($type == 'model'){
+
+        // cari model column
+        if(in_array($keyword, $columns)){
+
+            $sql = "SELECT * FROM matrix_part
+            WHERE `$keyword` IS NOT NULL
+            AND `$keyword` != ''
+            AND `$keyword` != '0'";
+
+        }else{
+
+            $sql = "SELECT * FROM matrix_part WHERE 1=0";
+        }
+    }
+    else{
+
+        $sql = "SELECT * FROM matrix_part WHERE 1=0";
+    }
+
+    $query = $conn->query($sql);
+
+    while($row = $query->fetch_assoc()){
+        $data[] = $row;
+    }
 }
 ?>
 
-<!doctype html>
-<html lang="en" data-bs-theme="auto">
-
+<!DOCTYPE html>
+<html>
 <head>
-  <script src="js/color-modes.js"></script>
-  <title>AC System</title>
-  <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/sign-in/">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
-  <link href="css/bootstrap.min.css" rel="stylesheet">
-  <link href="css/sign-in.css" rel="stylesheet">
+    <title>Matrix Part</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" rel="stylesheet">
 </head>
+<body class="bg-light">
+<div class="container-fluid py-5">
+    <!-- Header -->
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">Matrix Part Search</h1>
+        <p class="text-muted">Cari data berdasarkan Part Code, Part Name, atau Model AC</p>
+    </div>
 
-<body class="d-flex align-items-center py-4 bg-body-tertiary">
-  <!-- Import Themes -->
-  <?php include 'library/themes.php'; ?>
+    <!-- Search Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
 
-  <!-- Main Content -->
-  <main class="form-signin w-100 m-auto">
-    <form action="" method="POST" autocomplete="off">
-      <h1 class="h3 mb-3 text-center">Production HEPI</h1>
-      <div class="form-floating">
-        <input type="text" class="form-control" id="floatingUsername" placeholder="Username" name="username" required autofocus autocomplete="off">
-        <label for="floatingUsername">Username</label>
-      </div>
-      <div class="form-floating">
-        <input type="password" class="form-control" id="floatingPassword" placeholder="Password" name="password" required>
-        <label for="floatingPassword">Password</label>
-      </div>
-      <button class="btn btn-primary w-100 py-2" type="submit" name="btn_login">Sign in</button>
-    </form>
-  </main>
-  <script src="js/bootstrap.bundle.min.js"></script>
+            <form method="GET" class="row g-3 align-items-end">
+
+                <div class="col-md-3">
+                    <label class="form-label">Search Type</label>
+                    <select name="type" class="form-select" required>
+                        <option value="">-- Pilih Search --</option>
+
+                        <option value="component" <?php if($type=='component') echo 'selected'; ?>>
+                            Part Code
+                        </option>
+
+                        <option value="description" <?php if($type=='description') echo 'selected'; ?>>
+                            Part Name
+                        </option>
+
+                        <option value="model" <?php if($type=='model') echo 'selected'; ?>>
+                            Model
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-7">
+                    <label class="form-label">Keyword / Model</label>
+                    <input
+                        type="text"
+                        name="keyword"
+                        class="form-control"
+                        placeholder="Masukkan keyword / model"
+                        value="<?php echo htmlspecialchars($keyword); ?>"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-2 d-grid">
+                    <button type="submit" name="search" class="btn btn-primary">
+                        Search
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Info -->
+    <?php if($type == 'model' && $keyword != ''){ ?>
+        <div class="alert alert-info">
+            Model: <strong><?php echo htmlspecialchars($keyword); ?></strong>
+        </div>
+    <?php } ?>
+
+    <!-- Result -->
+    <?php if(count($data) > 0){ ?>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            Hasil Pencarian
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No</th>
+                            <th>Component</th>
+                            <th>Description</th>
+                            <th>UoM</th>
+
+                            <?php if($type == 'model'){ ?>
+                                <th><?php echo htmlspecialchars($keyword); ?></th>
+                            <?php } ?>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <?php foreach($data as $row){ ?>
+                        <tr>
+                            <td><?php echo $row['No']; ?></td>
+                            <td><?php echo $row['Component']; ?></td>
+                            <td><?php echo $row['Description']; ?></td>
+                            <td><?php echo $row['UoM']; ?></td>
+
+                            <?php if($type == 'model'){ ?>
+                                <td><?php echo $row[$keyword]; ?></td>
+                            <?php } ?>
+                        </tr>
+                        <?php } ?>
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <?php } elseif(isset($_GET['search'])) { ?>
+
+        <div class="alert alert-warning text-center">
+            Data tidak ditemukan
+        </div>
+
+    <?php } ?>
+
+</div>
+
+<script src="js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
