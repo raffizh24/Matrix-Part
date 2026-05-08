@@ -235,8 +235,8 @@ if (isset($_GET['search'])) {
                                 <th>No</th>
                                 <th>Component</th>
                                 <th>Description</th>
-                                <th>UoM</th>
                                 <th>Qty</th>
+                                <th>UoM</th>
                                 <th><?= ($type == 'model') ? 'Model' : 'Available Models' ?></th>
                             </tr>
                         </thead>
@@ -260,7 +260,6 @@ if (isset($_GET['search'])) {
                                     <td><?= $row['No'] ?></td>
                                     <td><?= $row['Component'] ?></td>
                                     <td><?= $row['Description'] ?></td>
-                                    <td><?= $row['UoM'] ?></td>
                                     <!-- QTY -->
                                     <td>
                                         <?php
@@ -281,6 +280,7 @@ if (isset($_GET['search'])) {
                                         }
                                         ?>
                                     </td>
+                                    <td><?= $row['UoM'] ?></td>
                                     <!-- MODEL -->
                                     <td>
                                         <?php
