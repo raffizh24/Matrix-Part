@@ -8,13 +8,11 @@ $columns = [];
 $getColumns = $conn->query("SHOW COLUMNS FROM matrix_part");
 
 while ($col = $getColumns->fetch_assoc()) {
-    if ($col['Field'] != 'id') {
-        $columns[] = $col['Field'];
-    }
+    $columns[] = $col['Field'];
 }
 
 // =========================
-// KOLOM NON MODEL
+// KOLOM BUKAN MODEL
 // =========================
 $excludeColumns = [
     'id',
@@ -38,11 +36,11 @@ if (isset($_GET['search'])) {
 
     if ($type == 'component') {
 
-        $sql = "SELECT * FROM matrix_part
+        $sql = "SELECT * FROM matrix_part 
                 WHERE Component LIKE '%$keyword%'";
     } elseif ($type == 'description') {
 
-        $sql = "SELECT * FROM matrix_part
+        $sql = "SELECT * FROM matrix_part 
                 WHERE Description LIKE '%$keyword%'";
     } elseif ($type == 'model') {
 
@@ -89,7 +87,7 @@ if (isset($_GET['search'])) {
         <!-- Search Cards -->
         <div class="row g-4">
 
-            <!-- Search by Part Code -->
+            <!-- Part Code -->
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
@@ -116,7 +114,7 @@ if (isset($_GET['search'])) {
                 </div>
             </div>
 
-            <!-- Search by Part Name -->
+            <!-- Part Name -->
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
@@ -143,7 +141,7 @@ if (isset($_GET['search'])) {
                 </div>
             </div>
 
-            <!-- Search by Model -->
+            <!-- Model -->
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
@@ -166,6 +164,7 @@ if (isset($_GET['search'])) {
                                             </option>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
+
                                 </select>
                             </div>
 
@@ -179,11 +178,23 @@ if (isset($_GET['search'])) {
 
         </div>
 
-        <!-- Info -->
-        <?php if ($type == 'model' && $keyword != ''): ?>
+        <!-- Search Info -->
+        <?php if ($keyword != ''): ?>
+
             <div class="alert alert-info mt-4">
-                Model: <strong><?php echo htmlspecialchars($keyword); ?></strong>
+
+                <?php if ($type == 'model'): ?>
+                    Model:
+                <?php elseif ($type == 'component'): ?>
+                    Part Code:
+                <?php elseif ($type == 'description'): ?>
+                    Part Name:
+                <?php endif; ?>
+
+                <strong><?php echo htmlspecialchars($keyword); ?></strong>
+
             </div>
+
         <?php endif; ?>
 
         <!-- Result -->
@@ -195,8 +206,8 @@ if (isset($_GET['search'])) {
                 </div>
 
                 <div class="card-body p-0">
-
                     <div class="table-responsive">
+
                         <table class="table table-striped table-hover mb-0">
 
                             <thead class="table-dark">
@@ -205,6 +216,7 @@ if (isset($_GET['search'])) {
                                     <th>Component</th>
                                     <th>Description</th>
                                     <th>UoM</th>
+                                    <th>Qty</th>
 
                                     <?php if ($type == 'model'): ?>
                                         <th>Model</th>
@@ -223,6 +235,35 @@ if (isset($_GET['search'])) {
                                         <td><?php echo $row['Description']; ?></td>
                                         <td><?php echo $row['UoM']; ?></td>
 
+                                        <!-- Qty -->
+                                        <td>
+                                            <?php
+                                            if ($type == 'model') {
+                                                echo $row[$keyword];
+                                            } else {
+                                                $qtyList = [];
+
+                                                foreach ($row as $col => $val) {
+                                                    if (
+                                                        !in_array($col, $excludeColumns)
+                                                        && $val != ''
+                                                        && $val != '0'
+                                                    ) {
+                                                        $qtyList[] = $val;
+                                                    }
+                                                }
+
+                                                // Hapus duplicate
+                                                $qtyList = array_unique($qtyList);
+
+                                                echo !empty($qtyList)
+                                                    ? implode(', ', $qtyList)
+                                                    : '-';
+                                            }
+                                            ?>
+                                        </td>
+
+                                        <!-- Model -->
                                         <td>
                                             <?php
                                             if ($type == 'model') {
@@ -233,7 +274,8 @@ if (isset($_GET['search'])) {
                                                 foreach ($row as $col => $val) {
                                                     if (
                                                         !in_array($col, $excludeColumns)
-                                                        && $val == 1
+                                                        && $val != ''
+                                                        && $val != '0'
                                                     ) {
                                                         $models[] = $col;
                                                     }
@@ -251,8 +293,8 @@ if (isset($_GET['search'])) {
                             </tbody>
 
                         </table>
-                    </div>
 
+                    </div>
                 </div>
             </div>
 
