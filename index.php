@@ -28,6 +28,7 @@ $excludeColumns = [
 $data = [];
 $keyword = "";
 $type = "";
+$modelFilter = isset($_GET['model_filter']) ? trim($_GET['model_filter']) : '';
 
 if (isset($_GET['search'])) {
 
@@ -36,11 +37,11 @@ if (isset($_GET['search'])) {
 
     if ($type == 'component') {
 
-        $sql = "SELECT * FROM matrix_part 
+        $sql = "SELECT * FROM matrix_part
                 WHERE Component LIKE '%$keyword%'";
     } elseif ($type == 'description') {
 
-        $sql = "SELECT * FROM matrix_part 
+        $sql = "SELECT * FROM matrix_part
                 WHERE Description LIKE '%$keyword%'";
     } elseif ($type == 'model') {
 
@@ -84,7 +85,7 @@ if (isset($_GET['search'])) {
             <p class="text-muted">Cari data berdasarkan Part Code, Part Name, atau Model AC</p>
         </div>
 
-        <!-- Search Cards -->
+        <!-- SEARCH CARDS -->
         <div class="row g-4">
 
             <!-- Part Code -->
@@ -178,9 +179,8 @@ if (isset($_GET['search'])) {
 
         </div>
 
-        <!-- Search Info -->
+        <!-- SEARCH INFO -->
         <?php if ($keyword != ''): ?>
-
             <div class="alert alert-info mt-4">
 
                 <?php if ($type == 'model'): ?>
@@ -194,10 +194,47 @@ if (isset($_GET['search'])) {
                 <strong><?php echo htmlspecialchars($keyword); ?></strong>
 
             </div>
+        <?php endif; ?>
+
+        <!-- FILTER MODEL -->
+        <?php if (($type == 'component' || $type == 'description') && count($data) > 0): ?>
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-end">
+
+                        <input type="hidden" name="type" value="<?php echo $type; ?>">
+                        <input type="hidden" name="keyword" value="<?php echo htmlspecialchars($keyword); ?>">
+                        <input type="hidden" name="search" value="1">
+
+                        <div class="col-md-6" style="max-width: 300px;">
+                            <label class="form-label">Filter by Model</label>
+
+                            <select name="model_filter" class="form-select">
+                                <option value="">-- Semua Model --</option>
+                                <?php foreach ($columns as $col): ?>
+                                    <?php if (!in_array($col, $excludeColumns)): ?>
+                                        <option value="<?php echo htmlspecialchars($col); ?>"
+                                            <?php echo ($modelFilter == $col) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($col); ?>
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-dark w-100" type="submit">
+                                Filter
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
 
         <?php endif; ?>
 
-        <!-- Result -->
+        <!-- RESULT -->
         <?php if (count($data) > 0): ?>
 
             <div class="card shadow-sm mt-4">
@@ -229,6 +266,19 @@ if (isset($_GET['search'])) {
                             <tbody>
 
                                 <?php foreach ($data as $row): ?>
+
+                                    <?php
+                                    if ($modelFilter != '') {
+                                        if (
+                                            !isset($row[$modelFilter]) ||
+                                            $row[$modelFilter] == '' ||
+                                            $row[$modelFilter] == '0'
+                                        ) {
+                                            continue;
+                                        }
+                                    }
+                                    ?>
+
                                     <tr>
                                         <td><?php echo $row['No']; ?></td>
                                         <td><?php echo $row['Component']; ?></td>
@@ -253,7 +303,6 @@ if (isset($_GET['search'])) {
                                                     }
                                                 }
 
-                                                // Hapus duplicate
                                                 $qtyList = array_unique($qtyList);
 
                                                 echo !empty($qtyList)
@@ -263,7 +312,7 @@ if (isset($_GET['search'])) {
                                             ?>
                                         </td>
 
-                                        <!-- Model -->
+                                        <!-- Models -->
                                         <td>
                                             <?php
                                             if ($type == 'model') {
@@ -288,6 +337,7 @@ if (isset($_GET['search'])) {
                                             ?>
                                         </td>
                                     </tr>
+
                                 <?php endforeach; ?>
 
                             </tbody>
