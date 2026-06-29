@@ -1,6 +1,7 @@
 <?php
 require 'conn.php';
 require 'library/SimpleXLS.php';
+
 use Shuchkin\SimpleXLS;
 
 // PASSWORD UPLOAD
@@ -21,7 +22,7 @@ function cleanColumnName($name)
     $name = substr($name, 0, 60);
 
     if ($name == '') {
-        $name = 'column_' . rand(1000,9999);
+        $name = 'column_' . rand(1000, 9999);
     }
 
     return $name;
@@ -30,18 +31,17 @@ function cleanColumnName($name)
 // =========================
 // UPLOAD PROCESS
 // =========================
-if(isset($_POST['upload'])){
+if (isset($_POST['upload'])) {
 
     // CHECK PASSWORD
     $inputPassword = $_POST['password'];
 
-    if($inputPassword != $uploadPassword){
+    if ($inputPassword != $uploadPassword) {
 
         $message = "Password salah!";
+    } else {
 
-    }else{
-
-        if($_FILES['excel_file']['error'] == 0){
+        if ($_FILES['excel_file']['error'] == 0) {
 
             $file = $_FILES['excel_file']['tmp_name'];
 
@@ -50,7 +50,7 @@ if(isset($_POST['upload'])){
 
                 $rows = $xls->rows();
 
-                if(count($rows) > 0){
+                if (count($rows) > 0) {
 
                     // HEADER
                     $headers = $rows[0];
@@ -60,7 +60,7 @@ if(isset($_POST['upload'])){
                     // DROP TABLE
                     $dropSQL = "DROP TABLE IF EXISTS `$tableName`";
 
-                    if(!$conn->query($dropSQL)){
+                    if (!$conn->query($dropSQL)) {
                         die($conn->error);
                     }
 
@@ -70,13 +70,13 @@ if(isset($_POST['upload'])){
 
                     $usedColumns = [];
 
-                    foreach($headers as $header){
+                    foreach ($headers as $header) {
 
                         $col = cleanColumnName($header);
 
                         // avoid duplicate
-                        if(in_array($col, $usedColumns)){
-                            $col .= "_" . rand(100,999);
+                        if (in_array($col, $usedColumns)) {
+                            $col .= "_" . rand(100, 999);
                         }
 
                         $usedColumns[] = $col;
@@ -90,19 +90,19 @@ if(isset($_POST['upload'])){
                     ENGINE=InnoDB
                     DEFAULT CHARSET=utf8mb4";
 
-                    if(!$conn->query($createSQL)){
+                    if (!$conn->query($createSQL)) {
                         die($conn->error);
                     }
 
                     // INSERT DATA
-                    for($i=1; $i<count($rows); $i++){
+                    for ($i = 1; $i < count($rows); $i++) {
 
                         $row = $rows[$i];
 
                         $cols = [];
                         $vals = [];
 
-                        foreach($headers as $index => $header){
+                        foreach ($headers as $index => $header) {
 
                             $col = cleanColumnName($header);
 
@@ -120,7 +120,7 @@ if(isset($_POST['upload'])){
                         VALUES
                         (" . implode(",", $vals) . ")";
 
-                        if(!$conn->query($insertSQL)){
+                        if (!$conn->query($insertSQL)) {
 
                             echo "<pre>";
                             echo $insertSQL;
@@ -132,7 +132,6 @@ if(isset($_POST['upload'])){
 
                     $message = "Upload berhasil!";
                 }
-
             } else {
 
                 $message = SimpleXLS::parseError();
@@ -143,27 +142,36 @@ if(isset($_POST['upload'])){
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Matrix Part</title>
     <link rel="stylesheet" href="css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body> 
-<div class="container text-center">
-    <h1 class="h1 m-5">Upload XLS Matrix Part</h1>
-    <form method="POST" enctype="multipart/form-data" style="max-width: 500px;" class="mx-auto">
-        <div class="mb-3">
-            <input class="form-control" type="file" name="excel_file" accept=".xls" required>
+
+<body>
+    <div class="container text-center">
+        <div class="position-fixed top-0 end-0 m-4 d-flex gap-2">
+            <a href="index.php"
+                class="btn btn-secondary shadow">
+                <i class="bi bi-upload"></i> Back to Home
+            </a>
         </div>
-        <input type="password" class="form-control" name="password" placeholder="Password" required>
-        <button type="submit" name="upload" class="btn btn-primary my-3 w-100">Uploads</button>
-    </form>
-    <?php if (!empty($message)) : ?>
-        <div class="alert <?php echo ($message == 'Upload berhasil!') ? 'alert-success' : 'alert-danger'; ?> mx-auto" role="alert" style="max-width: 500px;">
-            <?php echo $message; ?>
-        </div>
-    <?php endif; ?>
-</div>
-<!-- Javascript -->
-<script src="../../js/bootstrap.bundle.min.js"></script>
+        <h1 class="h1 m-5">Upload XLS Matrix Part</h1>
+        <form method="POST" enctype="multipart/form-data" style="max-width: 500px;" class="mx-auto">
+            <div class="mb-3">
+                <input class="form-control" type="file" name="excel_file" accept=".xls" required>
+            </div>
+            <input type="password" class="form-control" name="password" placeholder="Password" required>
+            <button type="submit" name="upload" class="btn btn-primary my-3 w-100">Uploads</button>
+        </form>
+        <?php if (!empty($message)) : ?>
+            <div class="alert <?php echo ($message == 'Upload berhasil!') ? 'alert-success' : 'alert-danger'; ?> mx-auto" role="alert" style="max-width: 500px;">
+                <?php echo $message; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    <!-- Javascript -->
+    <script src="../../js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

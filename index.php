@@ -71,11 +71,11 @@ if (isset($_GET['search'])) {
 </head>
 
 <body class="bg-light">
-    <!-- REFRESH BUTTON -->
-    <a href="<?php echo strtok($_SERVER["REQUEST_URI"], '?'); ?>"
-        class="btn btn-secondary position-fixed top-0 end-0 m-4 shadow">
-        ↻ Refresh
-    </a>
+    <div class="position-fixed top-0 end-0 m-4 d-flex gap-2">
+        <a href="qc_holding.php" class="btn btn-primary shadow">📋 QC Holding</a>
+        <a href="upload.php" class="btn btn-primary shadow">⬆ Upload Data</a>
+        <a href="<?php echo strtok($_SERVER['REQUEST_URI'], '?'); ?> " class="btn btn-secondary shadow">↻ Refresh</a>
+    </div>
 
     <div class="container-fluid py-5">
         <!-- HEADER -->
