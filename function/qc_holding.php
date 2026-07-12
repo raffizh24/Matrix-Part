@@ -1,21 +1,17 @@
 <?php
-require 'conn.php';
-
+require '../conn.php';
 // ===============================
 // SAVE HOLD
 // ===============================
 if (isset($_POST['save'])) {
     $PASSWORD = "SeidPart01";
-
     if ($_POST['password'] != $PASSWORD) {
-
         echo "<script>
             alert('Password salah!');
             window.location='qc_holding.php';
           </script>";
         exit;
     }
-
     $part_code = mysqli_real_escape_string($conn, $_POST['part_code']);
     $part_name = mysqli_real_escape_string($conn, $_POST['part_name']);
     $supplier  = mysqli_real_escape_string($conn, $_POST['supplier']);
@@ -23,7 +19,6 @@ if (isset($_POST['save'])) {
     $cmc       = mysqli_real_escape_string($conn, $_POST['cmc']);
     $pqa       = mysqli_real_escape_string($conn, $_POST['pqa']);
     $reason    = mysqli_real_escape_string($conn, $_POST['reason']);
-
     $sql = "INSERT INTO qc_holding
             (
                 part_code,
@@ -48,26 +43,20 @@ if (isset($_POST['save'])) {
                 'Hold',
                 NOW()
             )";
-
     if (mysqli_query($conn, $sql)) {
-
         echo "<script>
         alert('Data berhasil disimpan.');
         window.location='qc_holding.php';
     </script>";
     } else {
-
         die("Error : " . mysqli_error($conn));
     }
 }
-
 // ===============================
 // COMPLETE HOLD
 // ===============================
 if (isset($_GET['done'])) {
-
     $id = (int)$_GET['done'];
-
     mysqli_query($conn, "
         UPDATE qc_holding
         SET
@@ -75,20 +64,16 @@ if (isset($_GET['done'])) {
             completed_at=NOW()
         WHERE id='$id'
     ");
-
     header("Location: qc_holding.php");
     exit;
 }
-
 // ===============================
 // SEARCH
 // ===============================
 $keyword = "";
 $where = "";
 if (isset($_GET['search'])) {
-
     $keyword = mysqli_real_escape_string($conn, $_GET['keyword']);
-
     $where = "
     WHERE
         part_code LIKE '%$keyword%'
@@ -98,7 +83,6 @@ if (isset($_GET['search'])) {
         supplier LIKE '%$keyword%'
     ";
 }
-
 // ===============================
 // SUMMARY
 // ===============================
@@ -107,19 +91,16 @@ SELECT COUNT(*) total
 FROM qc_holding
 WHERE status='Hold'
 "));
-
 $completed = mysqli_fetch_assoc(mysqli_query($conn, "
 SELECT COUNT(*) total
 FROM qc_holding
 WHERE status='Completed'
 "));
-
 // ===============================
 // DATA
 // ===============================
 $currentMonth = date('m');
 $currentYear  = date('Y');
-
 $sql = "
 SELECT *
 FROM qc_holding
@@ -133,7 +114,6 @@ WHERE
     status = 'Hold'
 )
 ";
-
 if ($keyword != "") {
     $sql .= "
     AND (
@@ -143,7 +123,6 @@ if ($keyword != "") {
     )
     ";
 }
-
 $sql .= "
 ORDER BY
     CASE
@@ -152,7 +131,6 @@ ORDER BY
     END,
     created_at DESC
 ";
-
 $data = mysqli_query($conn, $sql);
 ?>
 <!DOCTYPE html>
@@ -161,7 +139,7 @@ $data = mysqli_query($conn, $sql);
 <head>
     <meta charset="UTF-8">
     <title>QC Holding</title>
-    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
 </head>
 
 <body class="bg-light">
@@ -175,12 +153,11 @@ $data = mysqli_query($conn, $sql);
                 </small>
             </div>
             <div>
-                <a href="index.php" class="btn btn-secondary">
+                <a href="../index.php" class="btn btn-secondary">
                     ← Back
                 </a>
             </div>
         </div>
-
         <!-- SUMMARY -->
         <div class="row mb-4">
             <div class="col-md-6">
@@ -193,7 +170,6 @@ $data = mysqli_query($conn, $sql);
                     </div>
                 </div>
             </div>
-
             <div class="col-md-6">
                 <div class="card shadow-sm border-success">
                     <div class="card-body">
@@ -205,7 +181,6 @@ $data = mysqli_query($conn, $sql);
                 </div>
             </div>
         </div>
-
         <!-- FORM -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
@@ -216,7 +191,6 @@ $data = mysqli_query($conn, $sql);
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label>Part Code</label>
-
                             <input
                                 type="text"
                                 name="part_code"
@@ -225,7 +199,6 @@ $data = mysqli_query($conn, $sql);
                                 list="part_list"
                                 autocomplete="off"
                                 required>
-
                             <datalist id="part_list">
                                 <?php
                                 $parts = mysqli_query($conn, "SELECT DISTINCT component FROM matrix_part ORDER BY component");
@@ -311,7 +284,6 @@ $data = mysqli_query($conn, $sql);
                 </form>
             </div>
         </div>
-
         <!-- SEARCH -->
         <form method="GET" class="mb-3">
             <div class="input-group">
@@ -328,7 +300,6 @@ $data = mysqli_query($conn, $sql);
                 </button>
             </div>
         </form>
-
         <!-- TABLE -->
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white">
@@ -351,7 +322,6 @@ $data = mysqli_query($conn, $sql);
                             <th>Action</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         <?php
                         $no = 1;
@@ -398,49 +368,37 @@ $data = mysqli_query($conn, $sql);
         document
             .getElementById('part_code')
             .addEventListener('input', function() {
-
                 let partCode = this.value;
-
                 fetch(
                         'get_part.php?part_code=' +
                         encodeURIComponent(partCode)
                     )
                     .then(response => response.json())
                     .then(data => {
-
                         document
                             .getElementById('part_name')
                             .value = data.description;
-
                     });
-
             });
     </script>
     <script>
         document.getElementById('part_code')
             .addEventListener('input', function() {
-
                 let partCode = this.value;
-
                 console.log('Part Code:', partCode);
-
                 fetch(
                         'get_part.php?part_code=' +
                         encodeURIComponent(partCode)
                     )
                     .then(response => response.json())
                     .then(data => {
-
                         console.log('Response:', data);
-
                         document.getElementById('part_name').value =
                             data.description || '';
-
                     })
                     .catch(error => {
                         console.log(error);
                     });
-
             });
     </script>
 </body>

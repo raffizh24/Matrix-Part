@@ -1,306 +1,259 @@
 <?php
 require 'conn.php';
-
-// =========================
-// AMBIL SEMUA KOLOM
-// =========================
-$columns = [];
-$getColumns = $conn->query("SHOW COLUMNS FROM matrix_part");
-while ($col = $getColumns->fetch_assoc()) {
-    $columns[] = $col['Field'];
-}
-
-// =========================
-// KOLOM BUKAN MODEL
-// =========================
-$excludeColumns = [
-    'id',
-    'No',
-    'Component',
-    'Description',
-    'UoM'
-];
-
-// =========================
-// PARAMETER
-// =========================
 $data = [];
-$keyword = "";
-$type = "";
-$modelFilter = isset($_GET['model_filter']) ? trim($_GET['model_filter']) : '';
-$resultFilter = isset($_GET['result_filter']) ? trim($_GET['result_filter']) : '';
-
-// =========================
-// SEARCH
-// =========================
+$keyword = '';
+$type = '';
 if (isset($_GET['search'])) {
     $keyword = trim($_GET['keyword']);
     $type = $_GET['type'];
     if ($type == 'component') {
-        $sql = "SELECT * FROM matrix_part
-                WHERE Component LIKE '%$keyword%'";
+        $stmt = $conn->prepare("
+            SELECT *
+            FROM matrix_part2
+            WHERE component LIKE ?
+            ORDER BY component, model_code
+        ");
+        $like = "%$keyword%";
+        $stmt->bind_param("s", $like);
     } elseif ($type == 'description') {
-        $sql = "SELECT * FROM matrix_part
-                WHERE Description LIKE '%$keyword%'";
+        $stmt = $conn->prepare("
+            SELECT *
+            FROM matrix_part2
+            WHERE description LIKE ?
+            ORDER BY component, model_code
+        ");
+        $like = "%$keyword%";
+        $stmt->bind_param("s", $like);
     } elseif ($type == 'model') {
-        if (in_array($keyword, $columns)) {
-            $sql = "SELECT * FROM matrix_part
-                    WHERE `$keyword` IS NOT NULL
-                    AND `$keyword` != ''
-                    AND `$keyword` != '0'";
-        } else {
-            $sql = "SELECT * FROM matrix_part WHERE 1=0";
-        }
-    } else {
-        $sql = "SELECT * FROM matrix_part WHERE 1=0";
+        $stmt = $conn->prepare("
+            SELECT *
+            FROM matrix_part2
+            WHERE model_code LIKE ?
+            ORDER BY component, model_code
+        ");
+        $like = "%$keyword%";
+        $stmt->bind_param("s", $like);
     }
-    $query = $conn->query($sql);
-    while ($row = $query->fetch_assoc()) {
-        $data[] = $row;
+    if (isset($stmt)) {
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        $stmt->close();
     }
 }
+/*
+|--------------------------------------------------------------------------
+| PIVOT MATRIX
+|--------------------------------------------------------------------------
+*/
+$pivotData = [];
+$allModels = [];
+if (count($data) > 0) {
+    foreach ($data as $row) {
+        $component = $row['component'];
+        if (!isset($pivotData[$component])) {
+            $pivotData[$component] = [
+                'component'   => $row['component'],
+                'description' => $row['description'],
+                'models'      => []
+            ];
+        }
+        $pivotData[$component]['models'][$row['model_code']] = $row['qty'];
+        $allModels[$row['model_code']] = true;
+    }
+    ksort($allModels);
+}
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <title>Matrix Part Search</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+        body {
+            background: #f8f9fa;
+        }
+
+        .matrix-table {
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .matrix-table th {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .matrix-table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 2;
+        }
+
+        .sticky-col-2 {
+            position: sticky;
+            left: 180px;
+            background: white;
+            z-index: 2;
+        }
+
+        .thead-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+        }
+    </style>
 </head>
 
-<body class="bg-light">
+<body>
     <div class="position-fixed top-0 end-0 m-4 d-flex gap-2">
-        <a href="qc_holding.php" class="btn btn-primary shadow">📋 QC Holding</a>
-        <a href="upload.php" class="btn btn-primary shadow">⬆ Upload Data</a>
-        <a href="<?php echo strtok($_SERVER['REQUEST_URI'], '?'); ?> " class="btn btn-secondary shadow">↻ Refresh</a>
+        <a href="function/qc_holding.php"
+            class="btn btn-success shadow">
+            📋 QC Holding
+        </a>
+        <a href="function/upload.php"
+            class="btn btn-primary shadow">
+            ⬆ Upload Matrix
+        </a>
+        <a href="<?php echo strtok($_SERVER['REQUEST_URI'], '?'); ?>"
+            class="btn btn-secondary shadow">
+            ↻ Refresh
+        </a>
     </div>
-
-    <div class="container-fluid py-5">
-        <!-- HEADER -->
+    <div class="container-fluid py-4">
         <div class="text-center mb-4">
-            <h1 class="fw-bold">Matrix Part Search</h1>
-            <p class="text-muted">Cari berdasarkan Part Code, Part Name, atau Model</p>
+            <h1 class="fw-bold">
+                Matrix Part Search
+            </h1>
+            <p class="text-muted">
+                Search by Part Code, Part Name, atau Model
+            </p>
         </div>
-        <!-- SEARCH CARDS -->
-        <div class="row g-4">
-            <!-- PART CODE -->
+        <div class="row g-3">
             <div class="col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h5>Search by Part Code</h5>
-
                         <form method="GET">
-                            <input type="hidden" name="type" value="component">
-
+                            <input type="hidden"
+                                name="type"
+                                value="component">
                             <input type="text"
                                 name="keyword"
                                 class="form-control mb-3"
                                 placeholder="Masukkan Part Code"
                                 required>
-
-                            <button type="submit" name="search" class="btn btn-primary w-100">
+                            <button type="submit"
+                                name="search"
+                                class="btn btn-primary w-100">
                                 Search
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
-            <!-- PART NAME -->
             <div class="col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h5>Search by Part Name</h5>
-
                         <form method="GET">
-                            <input type="hidden" name="type" value="description">
+                            <input type="hidden"
+                                name="type"
+                                value="description">
                             <input type="text"
                                 name="keyword"
                                 class="form-control mb-3"
                                 placeholder="Masukkan Part Name"
                                 required>
-
-                            <button type="submit" name="search" class="btn btn-success w-100">
+                            <button type="submit"
+                                name="search"
+                                class="btn btn-success w-100">
                                 Search
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
-            <!-- MODEL -->
             <div class="col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h5>Search by Model</h5>
                         <form method="GET">
-                            <input type="hidden" name="type" value="model">
-                            <select name="keyword" class="form-select mb-3" required>
-                                <option value="">-- Pilih Model --</option>
-                                <?php foreach ($columns as $col): ?>
-                                    <?php if (!in_array($col, $excludeColumns)): ?>
-                                        <option value="<?= htmlspecialchars($col) ?>"
-                                            <?= ($keyword == $col) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($col) ?>
-                                        </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
-                            <button type="submit" name="search" class="btn btn-warning w-100">
+                            <input type="hidden"
+                                name="type"
+                                value="model">
+                            <input type="text"
+                                name="keyword"
+                                class="form-control mb-3"
+                                placeholder="Masukkan Model"
+                                required>
+                            <button type="submit"
+                                name="search"
+                                class="btn btn-warning w-100">
                                 Search
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
-
         </div>
-
-        <!-- INFO -->
         <?php if ($keyword != ''): ?>
             <div class="alert alert-info mt-4">
-                <strong>
-                    <?php
-                    if ($type == 'component') echo "Part Code";
-                    elseif ($type == 'description') echo "Part Name";
-                    else echo "Model";
-                    ?>
-                </strong> :
-                <?= htmlspecialchars($keyword) ?>
+                Keyword :
+                <strong><?= htmlspecialchars($keyword) ?></strong>
             </div>
         <?php endif; ?>
-
-        <!-- FILTER MODEL -->
-        <?php if (($type == 'component' || $type == 'description') && count($data) > 0): ?>
-            <div class="card mt-4 shadow-sm">
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <input type="hidden" name="type" value="<?= $type ?>">
-                        <input type="hidden" name="keyword" value="<?= htmlspecialchars($keyword) ?>">
-                        <input type="hidden" name="search" value="1">
-                        <div class="col-md-8">
-                            <select name="model_filter" class="form-select">
-                                <option value="">-- Semua Model --</option>
-                                <?php foreach ($columns as $col): ?>
-                                    <?php if (!in_array($col, $excludeColumns)): ?>
-                                        <option value="<?= $col ?>"
-                                            <?= ($modelFilter == $col) ? 'selected' : '' ?>>
-                                            <?= $col ?>
-                                        </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-dark w-100">Filter Model</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <!-- FILTER RESULT BY MODEL -->
-        <?php if ($type == 'model' && count($data) > 0): ?>
-            <div class="card mt-4 shadow-sm">
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <input type="hidden" name="type" value="model">
-                        <input type="hidden" name="keyword" value="<?= htmlspecialchars($keyword) ?>">
-                        <input type="hidden" name="search" value="1">
-                        <div class="col-md-8">
-                            <input type="text"
-                                name="result_filter"
-                                class="form-control"
-                                placeholder="Cari Part Code / Part Name"
-                                value="<?= htmlspecialchars($resultFilter) ?>">
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-dark w-100">Filter</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <!-- RESULT -->
-        <?php if (count($data) > 0): ?>
-            <div class="card mt-4 shadow-sm">
+        <?php if (count($pivotData) > 0): ?>
+            <div class="card mt-4 shadow">
                 <div class="card-header bg-primary text-white">
-                    Hasil Pencarian
+                    Total Part :
+                    <?= number_format(count($pivotData)) ?>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped mb-0">
+                    <table class="table table-bordered matrix-table mb-0">
                         <thead class="table-dark">
                             <tr>
-                                <th>No</th>
-                                <th>Component</th>
-                                <th>Description</th>
-                                <th>Qty</th>
-                                <th>UoM</th>
-                                <th><?= ($type == 'model') ? 'Model' : 'Available Models' ?></th>
+                                <th class="thead-sticky sticky-col"
+                                    style="min-width:180px;">
+                                    Part Code
+                                </th>
+                                <th class="thead-sticky sticky-col-2"
+                                    style="min-width:300px;">
+                                    Description
+                                </th>
+                                <?php foreach (array_keys($allModels) as $model): ?>
+                                    <th class="thead-sticky">
+                                        <?= htmlspecialchars($model) ?>
+                                    </th>
+                                <?php endforeach; ?>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($data as $row): ?>
-                                <?php
-                                if ($modelFilter != '') {
-                                    if (
-                                        !isset($row[$modelFilter]) ||
-                                        $row[$modelFilter] == '' ||
-                                        $row[$modelFilter] == '0'
-                                    ) continue;
-                                }
-                                if ($resultFilter != '') {
-                                    $matchComponent = stripos($row['Component'], $resultFilter) !== false;
-                                    $matchDescription = stripos($row['Description'], $resultFilter) !== false;
-                                    if (!$matchComponent && !$matchDescription) continue;
-                                }
-                                ?>
+                            <?php foreach ($pivotData as $item): ?>
                                 <tr>
-                                    <td><?= $row['No'] ?></td>
-                                    <td><?= $row['Component'] ?></td>
-                                    <td><?= $row['Description'] ?></td>
-                                    <!-- QTY -->
-                                    <td>
-                                        <?php
-                                        if ($type == 'model') {
-                                            echo $row[$keyword];
-                                        } else {
-                                            $qtyList = [];
-                                            foreach ($row as $col => $val) {
-                                                if (
-                                                    !in_array($col, $excludeColumns)
-                                                    && $val != ''
-                                                    && $val != '0'
-                                                ) {
-                                                    $qtyList[] = $val;
-                                                }
-                                            }
-                                            echo implode(', ', array_unique($qtyList));
-                                        }
-                                        ?>
+                                    <td class="sticky-col text-start">
+                                        <?= htmlspecialchars($item['component']) ?>
                                     </td>
-                                    <td><?= $row['UoM'] ?></td>
-                                    <!-- MODEL -->
-                                    <td>
-                                        <?php
-                                        if ($type == 'model') {
-                                            echo $keyword;
-                                        } else {
-                                            $models = [];
-                                            foreach ($row as $col => $val) {
-                                                if (
-                                                    !in_array($col, $excludeColumns)
-                                                    && $val != ''
-                                                    && $val != '0'
-                                                ) {
-                                                    $models[] = $col;
-                                                }
-                                            }
-                                            echo implode(', ', $models);
-                                        }
-                                        ?>
+                                    <td class="sticky-col-2 text-start">
+                                        <?= htmlspecialchars($item['description']) ?>
                                     </td>
+                                    <?php foreach (array_keys($allModels) as $model): ?>
+                                        <td>
+                                            <?= isset($item['models'][$model])
+                                                ? htmlspecialchars($item['models'][$model])
+                                                : '' ?>
+                                        </td>
+                                    <?php endforeach; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
