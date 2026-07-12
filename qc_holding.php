@@ -216,20 +216,32 @@ $data = mysqli_query($conn, $sql);
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label>Part Code</label>
+
                             <input
                                 type="text"
                                 name="part_code"
+                                id="part_code"
                                 class="form-control"
+                                list="part_list"
                                 autocomplete="off"
                                 required>
+
+                            <datalist id="part_list">
+                                <?php
+                                $parts = mysqli_query($conn, "SELECT DISTINCT component FROM matrix_part ORDER BY component");
+                                while ($p = mysqli_fetch_assoc($parts)) {
+                                    echo '<option value="' . $p['component'] . '">';
+                                }
+                                ?>
+                            </datalist>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label>Part Name</label>
                             <input
                                 type="text"
                                 name="part_name"
+                                id="part_name"
                                 class="form-control"
-                                autocomplete="off"
                                 required>
                         </div>
                         <div class="col-md-4 mb-3">
@@ -382,6 +394,55 @@ $data = mysqli_query($conn, $sql);
         </div>
     </div>
     <script src="js/bootstrap.bundle.min.js"></script>
+    <script>
+        document
+            .getElementById('part_code')
+            .addEventListener('input', function() {
+
+                let partCode = this.value;
+
+                fetch(
+                        'get_part.php?part_code=' +
+                        encodeURIComponent(partCode)
+                    )
+                    .then(response => response.json())
+                    .then(data => {
+
+                        document
+                            .getElementById('part_name')
+                            .value = data.description;
+
+                    });
+
+            });
+    </script>
+    <script>
+        document.getElementById('part_code')
+            .addEventListener('input', function() {
+
+                let partCode = this.value;
+
+                console.log('Part Code:', partCode);
+
+                fetch(
+                        'get_part.php?part_code=' +
+                        encodeURIComponent(partCode)
+                    )
+                    .then(response => response.json())
+                    .then(data => {
+
+                        console.log('Response:', data);
+
+                        document.getElementById('part_name').value =
+                            data.description || '';
+
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+
+            });
+    </script>
 </body>
 
 </html>
