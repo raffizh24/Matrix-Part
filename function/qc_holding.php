@@ -132,6 +132,40 @@ ORDER BY
     created_at DESC
 ";
 $data = mysqli_query($conn, $sql);
+
+// HOLD DURATION FUNCTION
+function holdDuration($start, $end = null)
+{
+    $startTime = new DateTime($start);
+
+    if ($end) {
+        $endTime = new DateTime($end);
+    } else {
+        $endTime = new DateTime();
+    }
+
+    $diff = $startTime->diff($endTime);
+
+    $result = "";
+
+    if ($diff->d > 0) {
+        $result .= $diff->d . " Day ";
+    }
+
+    if ($diff->h > 0) {
+        $result .= $diff->h . " Hour ";
+    }
+
+    if ($diff->i > 0 && $diff->d == 0) {
+        $result .= $diff->i . " Min";
+    }
+
+    if ($result == "") {
+        $result = "0 Min";
+    }
+
+    return trim($result);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -318,6 +352,7 @@ $data = mysqli_query($conn, $sql);
                             <th>CMC</th>
                             <th>PQA</th>
                             <th>Reason Hold</th>
+                            <th>Hold Time</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -337,6 +372,24 @@ $data = mysqli_query($conn, $sql);
                                 <td><?= $row['cmc']; ?></td>
                                 <td><?= $row['pqa']; ?></td>
                                 <td><?= $row['reason']; ?></td>
+                                <td>
+                                    <?php
+                                    if ($row['status'] == "Hold") {
+
+                                        echo '<span class="badge bg-warning text-dark">';
+                                        echo holdDuration($row['created_at']);
+                                        echo '</span>';
+                                    } else {
+
+                                        echo '<span class="badge bg-success">';
+                                        echo holdDuration(
+                                            $row['created_at'],
+                                            $row['completed_at']
+                                        );
+                                        echo '</span>';
+                                    }
+                                    ?>
+                                </td>
                                 <td>
                                     <?php
                                     if ($row['status'] == "Hold") {
