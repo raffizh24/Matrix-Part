@@ -9,7 +9,7 @@ if (isset($_GET['search'])) {
     if ($type == 'component') {
         $stmt = $conn->prepare("
             SELECT *
-            FROM matrix_part2
+            FROM matrix_part
             WHERE component LIKE ?
             ORDER BY component, model_code
         ");
@@ -18,7 +18,7 @@ if (isset($_GET['search'])) {
     } elseif ($type == 'description') {
         $stmt = $conn->prepare("
             SELECT *
-            FROM matrix_part2
+            FROM matrix_part
             WHERE description LIKE ?
             ORDER BY component, model_code
         ");
@@ -27,7 +27,7 @@ if (isset($_GET['search'])) {
     } elseif ($type == 'model') {
         $stmt = $conn->prepare("
             SELECT *
-            FROM matrix_part2
+            FROM matrix_part
             WHERE model_code LIKE ?
             ORDER BY component, model_code
         ");
