@@ -370,7 +370,7 @@ if (isset($_POST['save_revisi'])) {
                             <th width="100">Pemasok</th>
                             <th width="50">Qty</th>
                             <th width="50">Rev</th>
-                            <th width="100">Direvisi Oleh</th>
+                            <th width="100">Direvisi</th>
                             <th width="50">CMC</th>
                             <th width="50">PQA</th>
                             <th width="400">Alasan Hold</th>
