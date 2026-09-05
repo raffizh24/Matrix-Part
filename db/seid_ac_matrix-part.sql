@@ -2,8 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Jul 12, 2026 at 03:37 PM
+-- Host: localhost
+-- Generation Time: Sep 05, 2026 at 02:36 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.0.28
 
@@ -13259,17 +13259,59 @@ INSERT INTO `matrix_part` (`id`, `component`, `description`, `model_code`, `qty`
 
 CREATE TABLE `qc_holding` (
   `id` int(11) NOT NULL,
-  `part_code` varchar(100) NOT NULL,
-  `part_name` varchar(255) NOT NULL,
-  `supplier` varchar(255) NOT NULL,
-  `qty` int(11) NOT NULL DEFAULT 0,
-  `cmc` varchar(100) NOT NULL,
-  `pqa` varchar(100) NOT NULL,
+  `part_code` varchar(50) NOT NULL,
+  `part_name` varchar(200) NOT NULL,
+  `supplier` varchar(100) DEFAULT NULL,
+  `qty` int(11) NOT NULL,
+  `cmc` varchar(100) DEFAULT NULL,
+  `pqa` varchar(100) DEFAULT NULL,
   `reason` text DEFAULT NULL,
-  `status` enum('Hold','Completed') NOT NULL DEFAULT 'Hold',
-  `created_at` datetime NOT NULL,
+  `status` enum('Hold','Completed') DEFAULT 'Hold',
+  `qty_rev` int(11) DEFAULT NULL,
+  `rev_by` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` varchar(50) NOT NULL,
   `completed_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `qc_holding`
+--
+
+INSERT INTO `qc_holding` (`id`, `part_code`, `part_name`, `supplier`, `qty`, `cmc`, `pqa`, `reason`, `status`, `qty_rev`, `rev_by`, `created_at`, `created_by`, `completed_at`) VALUES
+(2, 'PVLV-A546JBEZ', 'FLARE UNION 3/8', 'SANHUA', 14580, 'VERO', 'AHMAD BADRUDIN', 'WAITING SORTIR (BY DAILY WORKER)\r\n-ISSUE RUSTY', 'Completed', NULL, NULL, '2026-07-21 08:09:11', 'A Badrudin', '2026-07-29 09:39:09'),
+(3, 'LHLD-Q118JBFZ', 'TERMINAL HOLDER F', 'PT DAE YOUNG', 2592, 'ENDANG ', 'AHMAD BADRUDIN', 'WAITING FOR SORTIR BY MEMBER DAE YOUNG\r\nISSUE NG DEFORM', 'Completed', 2592, 'Nizammul M', '2026-07-25 07:43:38', 'A Badrudin', '2026-08-04 08:38:34'),
+(4, 'PCON-A790JBEZ', 'CONDENSOR PFC', 'SANHUA INDUSTRY', 56, 'bekti', 'ahmad badrudin', 'PROCESS ANALISA IQC \r\n-Problem : NO CAP', 'Completed', NULL, NULL, '2026-08-05 04:16:48', 'A Badrudin', '2026-09-02 16:06:16'),
+(5, 'PCOV-E231JBWZ', 'EARTH PLATE - REC', 'PT. NIJES', 6186, 'RIYAN', 'AHMAD BADRUDIN', 'WAITHING REPLACMENT \r\n-PROBLEM TAPPING HOLE LOOSE SCREW', 'Completed', 1987, 'A Badrudin', '2026-08-07 08:24:41', 'A Badrudin', '2026-08-12 16:50:04'),
+(6, 'YALUM-YZ099JB', 'AL-FIN OUTDOOR', 'DIANGSU DINGSENG', 2, 'BEKTI', 'AHMAD BADRUDIN', 'ISSUE MATERIAL BERJAMUR\r\n-QTY : 2 COIL', 'Hold', NULL, NULL, '2026-09-02 09:06:04', 'A Badrudin', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user`
+--
+
+CREATE TABLE `user` (
+  `username` varchar(50) NOT NULL,
+  `password` varchar(50) NOT NULL,
+  `nama` varchar(50) NOT NULL,
+  `dept` enum('PQA','CMC') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user`
+--
+
+INSERT INTO `user` (`username`, `password`, `nama`, `dept`) VALUES
+('2200086', 'SeidMail01', 'M Harisma S', 'PQA'),
+('2600059', 'SeidMail02', 'Nizammul M', 'PQA'),
+('202300733', 'SeidMail03', 'A Badrudin', 'PQA'),
+('202301110', 'SeidMail04', 'Ilham W', 'PQA'),
+('2026000164', 'SeidMail05', 'Ali Ma\'ruf', 'PQA'),
+('202501545', 'SeidMail06', 'M Fariqul A', 'PQA'),
+('202400172', 'SeidMail07', 'Sukma P', 'PQA'),
+('202501116', 'SeidMail08', 'Rizal A P', 'PQA'),
+('PEG23030757', 'SeidMail09', 'M Faisal', 'PQA');
 
 --
 -- Indexes for dumped tables
@@ -13287,11 +13329,7 @@ ALTER TABLE `matrix_part`
 -- Indexes for table `qc_holding`
 --
 ALTER TABLE `qc_holding`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_part_code` (`part_code`),
-  ADD KEY `idx_supplier` (`supplier`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_created_at` (`created_at`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -13307,7 +13345,7 @@ ALTER TABLE `matrix_part`
 -- AUTO_INCREMENT for table `qc_holding`
 --
 ALTER TABLE `qc_holding`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
